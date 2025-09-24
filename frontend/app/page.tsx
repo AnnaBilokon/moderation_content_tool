@@ -1,66 +1,96 @@
 "use client";
 import { useState } from "react";
 
+/* ---------- Types ---------- */
+type ModelKey = "bart-large-mnli" | "xlm-roberta-xnli";
+
+interface LabelScore {
+  label: string;
+  score: number;
+}
+
+interface ClassificationItem {
+  text: string;
+  picked: LabelScore[];
+  all: LabelScore[];
+}
+
+interface ClassifyResponse {
+  results: ClassificationItem[];
+}
+
+/* ---------- Config ---------- */
 const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+/* ---------- Component ---------- */
 export default function Home() {
   const [texts, setTexts] = useState(
-    `I hope you have a wonderful day
-You're such a loser, nobody likes you
-Go back to your country
-All women are useless
-Thanks for your help!`
+    [
+      "I hope you have a wonderful day",
+      "You're such a loser, nobody likes you",
+      "Go back to your country",
+      "All women are useless",
+      "Thanks for your help!",
+    ].join("\n")
   );
+
   const [labels, setLabels] = useState(
     "toxic, insult, harassment, hate_speech, racism, sexism, sexual_content, self_harm, spam, safe"
   );
-  const [multi, setMulti] = useState(true);
-  const [thresh, setThresh] = useState(0.7);
-  const [model, setModel] = useState<"bart-large-mnli" | "xlm-roberta-xnli">(
-    "bart-large-mnli"
-  );
-  const [results, setResults] = useState<any[] | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [multi, setMulti] = useState<boolean>(true);
+  const [thresh, setThresh] = useState<number>(0.7);
+  const [model, setModel] = useState<ModelKey>("bart-large-mnli");
+  const [results, setResults] = useState<ClassificationItem[] | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function classify() {
+  async function classify(): Promise<void> {
     setLoading(true);
     setError(null);
+    setResults(null);
+
+    const payload = {
+      texts: texts
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean),
+      labels: labels
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+      multi_label: multi,
+      threshold: thresh,
+      model,
+    };
+
     try {
       const res = await fetch(`${apiBase}/classify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          texts: texts
-            .split("\n")
-            .map((s) => s.trim())
-            .filter(Boolean),
-          labels: labels
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean),
-          multi_label: multi,
-          threshold: thresh,
-          model,
-        }),
+        body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || `HTTP ${res.status}`);
+      }
+
+      const data: ClassifyResponse = await res.json();
       setResults(data.results);
-    } catch (e: any) {
-      setError(e.message || "Request failed");
-      setResults(null);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Request failed";
+      setError(msg);
     } finally {
       setLoading(false);
     }
   }
 
-  function downloadCSV() {
+  function downloadCSV(): void {
     if (!results) return;
-    const rows = [["text", "predicted_labels", "scores"]];
-    results.forEach((r: any) => {
-      const labs = r.picked.map((p: any) => p.label).join(" | ");
-      const scs = r.picked.map((p: any) => p.score.toFixed(3)).join(" | ");
+    const rows: string[][] = [["text", "predicted_labels", "scores"]];
+    results.forEach((r) => {
+      const labs = r.picked.map((p) => p.label).join(" | ");
+      const scs = r.picked.map((p) => p.score.toFixed(3)).join(" | ");
       rows.push([r.text, labs, scs]);
     });
     const csv = rows
@@ -76,7 +106,7 @@ Thanks for your help!`
   return (
     <main className="mx-auto max-w-3xl p-6 space-y-6">
       <header className="space-y-1">
-        <h1 className="text-2xl font-bold">Content Moderation Tool</h1>
+        <h1 className="text-2xl font-bold">Content Moderation</h1>
         <p className="text-gray-600">
           Detect offensive, hateful, or unsafe messages.
         </p>
@@ -88,7 +118,6 @@ Thanks for your help!`
           value={texts}
           onChange={(e) => setTexts(e.target.value)}
           className="w-full h-40 rounded-md border p-3 focus:outline-none focus:ring"
-          placeholder="Enter one message per line"
         />
       </section>
 
@@ -107,7 +136,7 @@ Thanks for your help!`
           <label className="text-sm font-medium">Model</label>
           <select
             value={model}
-            onChange={(e) => setModel(e.target.value as any)}
+            onChange={(e) => setModel(e.target.value as ModelKey)}
             className="w-full rounded-md border p-3"
           >
             <option value="bart-large-mnli">BART-MNLI (English)</option>
@@ -175,16 +204,16 @@ Thanks for your help!`
                 </tr>
               </thead>
               <tbody>
-                {results.map((r: any, i: number) => (
+                {results.map((r, i) => (
                   <tr key={i} className="border-t align-top">
                     <td className="p-2 whitespace-pre-wrap break-words">
                       {r.text}
                     </td>
                     <td className="p-2 whitespace-pre-wrap break-words">
-                      {r.picked.map((p: any) => p.label).join(", ")}
+                      {r.picked.map((p) => p.label).join(", ")}
                     </td>
                     <td className="p-2 whitespace-pre-wrap break-words">
-                      {r.picked.map((p: any) => p.score.toFixed(3)).join(", ")}
+                      {r.picked.map((p) => p.score.toFixed(3)).join(", ")}
                     </td>
                   </tr>
                 ))}
