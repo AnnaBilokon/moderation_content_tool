@@ -73,7 +73,7 @@ Backend API docs → http://localhost:8000/docs
 
 - 🚀 **[Live Demo (Frontend)](https://content-moderation-demo.vercel.app/)**  
    _(Try the app directly — paste some sample text and classify it)_
-- 📑 **[API Docs (Backend)](https://content-moderation-api.onrender.com/docs)**  
+- 📑 **[API Docs (Backend)](https://content-moderation-api-v7ag.onrender.com/docs)**  
    _(Explore the FastAPI Swagger docs and test endpoints)_
 
 ---
