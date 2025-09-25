@@ -2,7 +2,7 @@
 import { useState } from "react";
 
 /* ---------- Types ---------- */
-type ModelKey = "bart-large-mnli" | "xlm-roberta-xnli";
+type ModelKey = "valhalla/distilbart-mnli-12-1" | "xlm-roberta-xnli";
 
 interface LabelScore {
   label: string;
@@ -31,7 +31,7 @@ export default function Home() {
   );
   const [multi, setMulti] = useState<boolean>(true);
   const [thresh, setThresh] = useState<number>(0.7);
-  const [model, setModel] = useState<ModelKey>("bart-large-mnli");
+  const [model, setModel] = useState<ModelKey>("valhalla/distilbart-mnli-12-1");
   const [results, setResults] = useState<ClassificationItem[] | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
