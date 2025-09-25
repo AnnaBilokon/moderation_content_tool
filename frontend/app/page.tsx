@@ -24,15 +24,7 @@ const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 /* ---------- Component ---------- */
 export default function Home() {
-  const [texts, setTexts] = useState(
-    [
-      "I hope you have a wonderful day",
-      "You're such a loser, nobody likes you",
-      "Go back to your country",
-      "All women are useless",
-      "Thanks for your help!",
-    ].join("\n")
-  );
+  const [texts, setTexts] = useState([].join("\n"));
 
   const [labels, setLabels] = useState(
     "toxic, insult, harassment, hate_speech, racism, sexism, sexual_content, self_harm, spam, safe"
@@ -106,8 +98,8 @@ export default function Home() {
   return (
     <main className="mx-auto max-w-3xl p-6 space-y-6">
       <header className="space-y-1">
-        <h1 className="text-2xl font-bold">Content Moderation</h1>
-        <p className="text-gray-600">
+        <h1 className="text-2xl font-bold">Content Moderation Tool</h1>
+        <p className="text-gray-500">
           Detect offensive, hateful, or unsafe messages.
         </p>
       </header>
@@ -116,6 +108,7 @@ export default function Home() {
         <label className="text-sm font-medium">Messages (one per line)</label>
         <textarea
           value={texts}
+          placeholder="Enter messages here, one per line..."
           onChange={(e) => setTexts(e.target.value)}
           className="w-full h-40 rounded-md border p-3 focus:outline-none focus:ring"
         />
@@ -126,10 +119,11 @@ export default function Home() {
           <label className="text-sm font-medium">
             Custom labels (comma-separated)
           </label>
-          <input
+          <textarea
             value={labels}
             onChange={(e) => setLabels(e.target.value)}
-            className="w-full rounded-md border p-3 focus:outline-none focus:ring"
+            className="w-full min-h-[60px] rounded-md border p-3 focus:outline-none focus:ring resize-y"
+            placeholder="toxic, insult, harassment, hate_speech, ..."
           />
         </div>
         <div className="space-y-2">
