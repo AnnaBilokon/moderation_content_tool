@@ -45,6 +45,9 @@ Built with:
 
 ## Screenshots
 
+![Content Moderation Tool](public/images/app_pic.png)
+![Content Moderation Tool](<public/images/app_pic(2).png>)
+
 ## Getting Started
 
 ### Run locally with Docker
