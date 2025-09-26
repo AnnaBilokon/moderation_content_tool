@@ -1,9 +1,8 @@
-from typing import List, Literal
+from typing import List
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from transformers import pipeline
-from functools import lru_cache
 import os
 
 app = FastAPI(title="Content Moderation API", version="1.0.0")
@@ -27,8 +26,6 @@ class ClassifyRequest(BaseModel):
     multi_label: bool = True
     threshold: float = Field(default=float(
         os.getenv("DEFAULT_THRESHOLD", 0.7)), ge=0.0, le=1.0)
-    model: Literal["bart-large-mnli", "xlm-roberta-xnli"] = Field(
-        default=os.getenv("MODEL_KEY", "bart-large-mnli"))
 
 
 class LabelScore(BaseModel):
@@ -45,18 +42,12 @@ class ClassifyItem(BaseModel):
 class ClassifyResponse(BaseModel):
     results: List[ClassifyItem]
 
-# ----- Model loader (cached) -----
 
-
-@lru_cache(maxsize=4)
-def get_pipe(model_key: str):
-    model_map = {
-        "bart-large-mnli": "facebook/bart-large-mnli",          # English
-        "xlm-roberta-xnli": "joeddav/xlm-roberta-large-xnli",   # Multilingual
-    }
-    if model_key not in model_map:
-        raise ValueError(f"Unknown model: {model_key}")
-    return pipeline("zero-shot-classification", model=model_map[model_key])
+# ----- Load pipeline once -----
+clf = pipeline(
+    "zero-shot-classification",
+    model="facebook/bart-large-mnli"
+)
 
 
 @app.get("/health")
@@ -73,19 +64,16 @@ def classify(req: ClassifyRequest):
     if not labels:
         raise HTTPException(status_code=400, detail="No labels provided.")
 
-    clf = get_pipe(req.model)
     thr = float(req.threshold)
-
     results = []
+
     for t in texts[:500]:
         res = clf(t, candidate_labels=labels, multi_label=req.multi_label)
         pairs = [{"label": lab, "score": float(scr)} for lab, scr in zip(
             res["labels"], res["scores"])]
-
         picked = [p for p in pairs if p["score"] >= thr]
         if not picked and pairs:
             picked = [pairs[0]]
-
         results.append({"text": t, "picked": picked, "all": pairs})
 
     return {"results": results}
