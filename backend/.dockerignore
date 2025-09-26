@@ -1,0 +1,12 @@
+.git
+__pycache__/
+*.pyc
+*.pyo
+*.log
+.venv
+venv
+.env
+.env.*
+dist
+build
+hf-cache
