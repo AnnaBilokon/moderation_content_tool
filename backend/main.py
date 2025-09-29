@@ -2,6 +2,7 @@ from typing import List
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from functools import lru_cache
 from transformers import pipeline
 import os
 
@@ -13,8 +14,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# ----- Schemas -----
 
 
 class ClassifyRequest(BaseModel):
@@ -43,7 +42,15 @@ class ClassifyResponse(BaseModel):
     results: List[ClassifyItem]
 
 
-# ----- Load pipeline once -----
+@lru_cache(maxsize=1)
+def get_clf():
+    return pipeline(
+        "zero-shot-classification",
+        model="MoritzLaurer/mDeBERTa-v3-base-mnli-xnli"
+
+    )
+
+
 clf = pipeline(
     "zero-shot-classification",
     model="facebook/bart-large-mnli"
