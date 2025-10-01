@@ -10,7 +10,7 @@ app = FastAPI(title="Content Moderation API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # for demo; restrict in prod
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -46,15 +46,8 @@ class ClassifyResponse(BaseModel):
 def get_clf():
     return pipeline(
         "zero-shot-classification",
-        model="MoritzLaurer/mDeBERTa-v3-base-mnli-xnli"
-
+        model="typeform/distilbert-base-uncased-mnli"
     )
-
-
-clf = pipeline(
-    "zero-shot-classification",
-    model="facebook/bart-large-mnli"
-)
 
 
 @app.get("/health")
@@ -71,16 +64,15 @@ def classify(req: ClassifyRequest):
     if not labels:
         raise HTTPException(status_code=400, detail="No labels provided.")
 
+    clf = get_clf()
+
     thr = float(req.threshold)
     results = []
-
     for t in texts[:500]:
         res = clf(t, candidate_labels=labels, multi_label=req.multi_label)
         pairs = [{"label": lab, "score": float(scr)} for lab, scr in zip(
             res["labels"], res["scores"])]
-        picked = [p for p in pairs if p["score"] >= thr]
-        if not picked and pairs:
-            picked = [pairs[0]]
+        picked = [p for p in pairs if p["score"] >= thr] or (
+            [pairs[0]] if pairs else [])
         results.append({"text": t, "picked": picked, "all": pairs})
-
     return {"results": results}
